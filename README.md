@@ -34,7 +34,7 @@ jobs:
           - macos-15 # most recent aarch64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: samueldr-wip/nix-build-release.nix-action@latest
+      - uses: samueldr/nix-build-action@latest
 ```
 
 > [!NOTE]
