@@ -1,4 +1,4 @@
-name: nix-build
+name: nix-build action
 description: "All-inclusive single action to *just* nix-build your project."
 branding:
   color: blue
