@@ -1,0 +1,130 @@
+name: nix-build
+description: "All-inclusive single action to *just* nix-build your project."
+branding:
+  color: blue
+  icon: skip-forward
+
+inputs:
+  #
+  # Configurations affecting the Nix build
+  #
+
+  expression-file:
+    description: |
+      The expression file to build.
+      
+      When missing, it will try in order: `[ ./release.nix ./default.nix ]`.
+    required: false
+
+  attributes:
+    description: |
+      Attributes to build from the expression.
+
+      When missing, it will follow the default Nix semantics around build outputs.
+    required: false
+
+  nix-expression:
+    description: |
+      When provided, `nix-build` will pass the given value to the standard input, and build that instead of `expression-file`.
+    required: false
+
+  nix-build-extra-arguments:
+    description: |
+      When provided, the call to `nix-build` will use these appended extra arguments.
+
+      > [!WARNING]
+      > Beware of string splitting semantics!
+    required: false
+
+  nix-path:
+    description: |
+      When provided, `NIX_PATH` will be set to this value.
+    required: false
+
+  #
+  # Default actions involved
+  #
+
+  checkout-repo:
+    description: |
+      Whether the repository will be checked-out automatically with the actions/checkout action.
+
+      Use `false` to bring your own checkout action alternative.
+    required: false
+    default: "true"
+
+  installer-action:
+    description: |
+      Installer action to use.
+
+      Supports the following: `[ "lix-gha-installer-action" "none" ]`.
+
+      Use `none` to bring your own.
+    required: false
+    default: "lix-gha-installer-action"
+
+  cache-action:
+    description: |
+      Cache action to use.
+
+      Supports the following: `[ "DeterminateSystems/magic-nix-cache" "none" ]`.
+
+      Use `none` to disable or bring your own.
+    required: false
+    default: "DeterminateSystems/magic-nix-cache"
+
+  #upload-action:
+  #  description: |
+  #    Store paths upload action to use.
+  #
+  #    Supports the following: `[ "none" ]`.
+  #  required: false
+  #  default: "none"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout repository
+      if: ${{ inputs.checkout-repo == 'true' }}
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+    - uses: samueldr/lix-gha-installer-action@8bb402f5d394241dece8c7dd9f5c9f459649a03a # v1
+      if: ${{ inputs.installer-action == 'lix-gha-installer-action' }}
+
+    - uses: DeterminateSystems/magic-nix-cache-action@87b14cf437d03d37989d87f0fa5ce4f5dc1a330b # 8
+      if: ${{ inputs.cache-action == 'DeterminateSystems/magic-nix-cache' }}
+
+    - name: nix-build release.nix
+      #
+      # > If the action is written using a composite, then it will not automatically get INPUT_<VARIABLE_NAME>.
+      #  - https://docs.github.com/en/actions/sharing-automations/creating-actions/metadata-syntax-for-github-actions#inputs
+      # 
+      # ¯\_(ツ)_/¯
+      env:
+        INPUT_ATTRIBUTES: ${{ inputs.attributes }}
+        INPUT_EXPRESSION_FILE: ${{ inputs.expression-file }}
+        INPUT_NIX_EXPRESSION: ${{ inputs.nix-expression }}
+        INPUT_NIX_BUILD_EXTRA_ARGUMENTS: ${{ inputs.nix-build-extra-arguments }}
+        INPUT_NIX_PATH: ${{ inputs.nix-path }}
+      shell: bash
+      run: |
+        # (nix-build action starts here...)
+
+        cat <<'EOF'
+
+                 oo                   dP                oo dP       dP 
+                                      88                   88       88 
+        88d888b. dP dP.  .dP          88d888b. dP    dP dP 88 .d888b88 
+        88'  `88 88  `8bd8'  88888888 88'  `88 88    88 88 88 88'  `88 
+        88    88 88  .d88b.           88.  .88 88.  .88 88 88 88.  .88 
+        dP    dP dP dP'  `dP          88Y8888' `88888P' dP dP `88888P8 
+        ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+
+        EOF
+        echo '::group::Fetching existing dependencies for nix-build...'
+        bash ${{ github.action_path }}/do-nix-build -j0 --keep-going || :
+        echo '::endgroup::'
+        echo ""
+        echo ""
+        bash ${{ github.action_path }}/do-nix-build
+        echo ""

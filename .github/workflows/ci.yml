@@ -1,0 +1,185 @@
+name: "CI"
+on:
+  pull_request:
+  push:
+    branches:
+      - "latest"
+
+jobs:
+  do-it:
+    name: Environments check (nix=${{ matrix.nix }};cache=${{ matrix.cache }};os=${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # Testing the different inputs...
+        nix:
+          - lix-gha-installer-action
+          - none
+        cache:
+          - DeterminateSystems/magic-nix-cache
+          - none
+        os: # https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners#standard-github-hosted-runners-for-public-repositories
+          # We don't need to test *too* deeply. Otherwise our matrix becomes huge...
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
+          - macos-13 # Last x86_64
+          - macos-15 # aarch64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # Testing BYO nix.
+      - uses: cachix/install-nix-action@08dcb3a5e62fa31e2da3d490afc4176ef55ecd72 # v30
+        if: ${{ matrix.nix == 'none' }}
+
+      - name: Test this action...
+        uses: ./
+        with:
+          installer-action: ${{ matrix.nix }}
+          cache-action: ${{ matrix.cache }}
+
+      - name: Run common checks after the build
+        uses: ./.github/support/extra-info
+
+  input-expression-file:
+    name: "inputs: expression-file"
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: nix-build
+        uses: ./
+        with:
+          expression-file: alternate-expression.nix
+
+      - name: check success
+        shell: bash
+        run: |
+          (
+          PS4=" $ "
+          set -eux -o pipefail
+          cat result
+          [[ "$(cat result)" == "alt-ok" ]]
+          )
+
+      - name: Run common checks after the build
+        uses: ./.github/support/extra-info
+
+  input-attributes:
+    name: "inputs: attributes"
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: nix-build
+        uses: ./
+        with:
+          attributes: b a
+
+      - name: check success
+        shell: bash
+        run: |
+          (
+          PS4=" $ "
+          set -eux -o pipefail
+          test -e result
+          [[ "$(cat result)" == "b" ]]
+          test -e result-2
+          [[ "$(cat result-2)" == "a" ]]
+          ! test -e result-3
+          )
+
+      - name: Run common checks after the build
+        uses: ./.github/support/extra-info
+
+  input-nix-expression:
+    name: "inputs: nix-expression"
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: nix-build
+        uses: ./
+        with:
+          # Written in this way to stress-test handling
+          nix-expression: |
+            { pkgs ? (import (import ./npins).nixpkgs {})
+            }:
+
+            pkgs.callPackage (
+              { runCommand }:
+              runCommand "expr" {} ''
+                echo expr-ok > $out
+              ''
+            ) {}
+
+      - name: check success
+        shell: bash
+        run: |
+          (
+          PS4=" $ "
+          set -eux -o pipefail
+          cat result
+          [[ "$(cat result)" == "expr-ok" ]]
+          )
+
+      - name: Run common checks after the build
+        uses: ./.github/support/extra-info
+
+  input-nix-build-extra-arguments:
+    name: "inputs: nix-build-extra-arguments"
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: nix-build
+        uses: ./
+        with:
+          nix-build-extra-arguments: --no-out-link
+
+      - name: check success
+        shell: bash
+        run: |
+          (
+          PS4=" $ "
+          set -eux -o pipefail
+          ! test -e result
+          ! test -e result-2
+          ! test -e result-3
+          )
+
+      - name: Run common checks after the build
+        uses: ./.github/support/extra-info
+
+  input-nix-path:
+    name: "inputs: nix-path"
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: nix-build
+        uses: ./
+        with:
+          expression-file: nix-path-test.nix
+          nix-path: test-path=./release.nix
+
+      - name: check success
+        shell: bash
+        run: |
+          (
+          PS4=" $ "
+          set -eux -o pipefail
+          test -e result
+          [[ "$(tail -n1 result)" == "c" ]]
+          ! test -e result-1
+          ! test -e result-2
+          )
+
+      - name: Run common checks after the build
+        uses: ./.github/support/extra-info

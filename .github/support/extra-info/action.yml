@@ -1,0 +1,25 @@
+runs:
+  using: "composite"
+  steps:
+    - name: Environment information...
+      shell: bash
+      run: |
+        (
+        PS4=" $ "
+        set -eux -o pipefail
+        env | grep -i nix
+        cat /etc/nix/nix.conf
+        )
+
+    - name: Doing additional stuff with the test outputs...
+      shell: bash
+      run: |
+        (
+        PS4=" $ "
+        set -eux -o pipefail
+        shopt -s nullglob
+        ls -l
+        for f in result*; do
+          cat "$f"
+        done
+        )

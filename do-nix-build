@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+PS4=" [do-nix-build] "
+set -eu -o pipefail
+
+if [[ ${ACTIONS_RUNNER_DEBUG:-} == "true" ]]; then
+	set -x
+fi
+
+NIX_EXPRESSION_FILES=(
+	./release.nix
+	./default.nix
+)
+
+ARGS=( )
+STDIN=""
+
+if [[ "${INPUT_NIX_EXPRESSION:-}" != "" ]]; then
+	# shellcheck disable=SC2206
+	ARGS+=( - )
+	STDIN="$INPUT_NIX_EXPRESSION"
+else
+	if [[ "${INPUT_EXPRESSION_FILE:-}" != "" ]]; then
+		ARGS+=( "${INPUT_EXPRESSION_FILE}" )
+	else
+		for file in "${NIX_EXPRESSION_FILES[@]}"; do
+			if test -e "$file"; then
+				ARGS+=( "$file" )
+				break
+			fi
+		done
+	fi
+fi
+
+if [[ "${INPUT_ATTRIBUTES:-}" != "" ]]; then
+	for attr in $INPUT_ATTRIBUTES; do
+		# shellcheck disable=SC2206
+		ARGS+=( --attr "$attr" )
+	done
+fi
+
+if [[ "${INPUT_NIX_BUILD_EXTRA_ARGUMENTS:-}" != "" ]]; then
+	# shellcheck disable=SC2206
+	ARGS+=( $INPUT_NIX_BUILD_EXTRA_ARGUMENTS )
+fi
+
+if [[ "${INPUT_NIX_PATH:-}" != "" ]]; then
+	export NIX_PATH="$INPUT_NIX_PATH"
+fi
+
+PS4=" $ "
+# Shoving stdin into `nix-build` when not used (via `-`) is not an error.
+# Let's use that fact, and always shove in STDIN.
+printf "%s" "$STDIN" | (
+	set -x
+	exec nix-build "${ARGS[@]}" "$@"
+)
