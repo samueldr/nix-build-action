@@ -149,6 +149,15 @@ Supports the following: `[ "DeterminateSystems/magic-nix-cache" "none" ]`.
 Use `none` to disable or bring your own.
 
 
+### `initial-random-delay-max`
+
+*Default: `0`*
+
+Setting this option to a numeric value other than zero enables waiting a random amount of time at the start of the action.
+
+This is a common repeated pattern used to work around a thundering herd of github actions trampling over the API rate limits when dealing with multiple parallel builds, which may be exacerbated by using a matrix strategy.
+
+
 <!-- ACTION.YML INPUTS END -->
 
 * * *
