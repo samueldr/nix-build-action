@@ -77,11 +77,11 @@ inputs:
     description: |
       Cache action to use.
 
-      Supports the following: `[ "DeterminateSystems/magic-nix-cache" "none" ]`.
+      Supports the following: `[ "none" ]`.
 
       Use `none` to disable or bring your own.
     required: false
-    default: "DeterminateSystems/magic-nix-cache"
+    default: "none"
 
   #upload-action:
   #  description: |
@@ -146,8 +146,21 @@ runs:
         sudo systemctl restart nix-daemon
         )
 
-    - uses: DeterminateSystems/magic-nix-cache-action@87b14cf437d03d37989d87f0fa5ce4f5dc1a330b # 8
+    - name: "Deprecation warning for 'DeterminateSystems/magic-nix-cache'"
       if: ${{ inputs.cache-action == 'DeterminateSystems/magic-nix-cache' }}
+      shell: bash
+      run: |
+        printf "::warning title=%s::%s" \
+          'cache-action: deprecation of "DeterminateSystems/magic-nix-cache"' \
+          "$(
+            (
+            echo "The Magic Nix Cache is now EOL"
+            echo ""
+            echo " - See: https://github.com/DeterminateSystems/magic-nix-cache-action/pull/102"
+            echo ""
+            echo 'Please remove the `cache-action` setting, or configure an alternative.'
+            ) | sed -e ':a;N;$!ba;s/\n/%0A/g'
+          )"
 
     - name: nix-build release.nix
       #
