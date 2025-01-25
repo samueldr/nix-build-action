@@ -91,9 +91,30 @@ inputs:
   #  required: false
   #  default: "none"
 
+  #
+  # Additional nice features
+  #
+
+  initial-random-delay-max:
+    description: |
+      Setting this option to a numeric value other than zero enables waiting a random amount of time at the start of the action.
+
+      This is a common repeated pattern used to work around a thundering herd of github actions trampling over the API rate limits when dealing with multiple parallel builds, which may be exacerbated by using a matrix strategy.
+    required: false
+    default: "0"
+
 runs:
   using: "composite"
   steps:
+    - name: 💤 Random delay
+      if: ${{ inputs.initial-random-delay-max != '0' }}
+      shell: bash
+      run: |
+        delay=$(( RANDOM % ( ${{ inputs.initial-random-delay-max }} ) ))
+        printf "Waiting for %d seconds...\n" "$delay"
+        while (( delay-- && delay > 0 )); do printf "."; sleep 1; done
+        printf "\n... done!\n"
+
     - name: Checkout repository
       if: ${{ inputs.checkout-repo == 'true' }}
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
