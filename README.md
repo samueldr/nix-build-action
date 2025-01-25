@@ -116,6 +116,17 @@ Whether the repository will be checked-out automatically with the actions/checko
 Use `false` to bring your own checkout action alternative.
 
 
+### `space-making-action`
+
+*Default: `none`*
+
+Space making action to use.
+
+Supports the following:  `[ "none" "more-space-action" ]`.
+
+Not enabled by default as it adds some time to the action runtime, while not always being necessary.
+
+
 ### `installer-action`
 
 *Default: `lix-gha-installer-action`*
