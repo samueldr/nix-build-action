@@ -140,11 +140,11 @@ Use `none` to bring your own.
 
 ### `cache-action`
 
-*Default: `DeterminateSystems/magic-nix-cache`*
+*Default: `none`*
 
 Cache action to use.
 
-Supports the following: `[ "DeterminateSystems/magic-nix-cache" "none" ]`.
+Supports the following: `[ "none" ]`.
 
 Use `none` to disable or bring your own.
 
