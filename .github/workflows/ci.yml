@@ -16,7 +16,6 @@ jobs:
           - lix-gha-installer-action
           - none
         cache:
-          - DeterminateSystems/magic-nix-cache
           - none
         os: # https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners#standard-github-hosted-runners-for-public-repositories
           # We don't need to test *too* deeply. Otherwise our matrix becomes huge...
