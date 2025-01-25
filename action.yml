@@ -162,7 +162,7 @@ runs:
             ) | sed -e ':a;N;$!ba;s/\n/%0A/g'
           )"
 
-    - name: nix-build release.nix
+    - name: nix-build
       #
       # > If the action is written using a composite, then it will not automatically get INPUT_<VARIABLE_NAME>.
       #  - https://docs.github.com/en/actions/sharing-automations/creating-actions/metadata-syntax-for-github-actions#inputs
